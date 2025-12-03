@@ -4,17 +4,14 @@
 #include <arpa/inet.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <unistd.h>
 #include <string.h>
 
 #include "common.h"
 #include "parse.h"
 
 int create_db_header(struct dbheader_t **headerOut) {
-	struct dbheader_t *header = malloc(sizeof(struct dbheader_t));
-	if (header == NULL) {
-		return STATUS_ERROR;
-	}
+	struct dbheader_t *header = calloc(1, sizeof(struct dbheader_t));
+	if (!header) return STATUS_ERROR;
 	
 	header->magic = HEADER_MAGIC;
 	header->version = 1;
@@ -28,31 +25,20 @@ int create_db_header(struct dbheader_t **headerOut) {
 int validate_db_header(int fd, struct dbheader_t **headerOut) {
 	*headerOut = NULL;
 	
-	if (fd < 0) {
-		return STATUS_ERROR;
-	}
-	
 	struct dbheader_t *header = calloc(1, sizeof(struct dbheader_t));
-	if (header == NULL) {
-		return STATUS_ERROR;
-	}
+	if (!header) return STATUS_ERROR;
 	
 	if (read(fd, header, sizeof(struct dbheader_t)) != sizeof(struct dbheader_t)) {
 		free(header);
 		return STATUS_ERROR;
 	}
 	
+	header->magic = ntohl(header->magic);
 	header->version = ntohs(header->version);
 	header->count = ntohs(header->count);
-	header->magic = ntohl(header->magic);
 	header->filesize = ntohl(header->filesize);
 	
-	if (header->magic != HEADER_MAGIC) {
-		free(header);
-		return STATUS_ERROR;
-	}
-	
-	if (header->version != 1) {
+	if (header->magic != HEADER_MAGIC || header->version != 1) {
 		free(header);
 		return STATUS_ERROR;
 	}
@@ -66,22 +52,14 @@ int read_employees(int fd, struct dbheader_t *dbhdr, struct employee_t **employe
 }
 
 int output_file(int fd, struct dbheader_t *dbhdr, struct employee_t *employees) {
-	if (fd < 0) {
-		return STATUS_ERROR;
-	}
-	
-	struct dbheader_t temp_header = *dbhdr;
-	temp_header.magic = htonl(temp_header.magic);
-	temp_header.filesize = htonl(temp_header.filesize);
-	temp_header.count = htons(temp_header.count);
-	temp_header.version = htons(temp_header.version);
+	struct dbheader_t header = *dbhdr;
+	header.magic = htonl(header.magic);
+	header.version = htons(header.version);
+	header.count = htons(header.count);
+	header.filesize = htonl(header.filesize);
 	
 	lseek(fd, 0, SEEK_SET);
-	if (write(fd, &temp_header, sizeof(struct dbheader_t)) != sizeof(struct dbheader_t)) {
-		return STATUS_ERROR;
-	}
-	
-	return STATUS_SUCCESS;
+	return (write(fd, &header, sizeof(struct dbheader_t)) == sizeof(struct dbheader_t)) ? STATUS_SUCCESS : STATUS_ERROR;
 }
 
 void list_employees(struct dbheader_t *dbhdr, struct employee_t *employees) {
@@ -90,5 +68,3 @@ void list_employees(struct dbheader_t *dbhdr, struct employee_t *employees) {
 int add_employee(struct dbheader_t *dbhdr, struct employee_t *employees, char *addstring) {
 	return STATUS_SUCCESS;
 }
-
-
