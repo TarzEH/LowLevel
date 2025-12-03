@@ -19,7 +19,7 @@ int create_db_header(struct dbheader_t **headerOut) {
 	header->version = 1;
 	header->count = 0;
 	header->magic = HEADER_MAGIC;
-	header->filesize = sizeof(struct dbheader_t) + (sizeof(struct employee_t) * header->count);
+	header->filesize = ntohl(sizeof(struct dbheader_t) + (sizeof(struct employee_t) * header->count));
 
 	*headerOut = header;
 	return STATUS_SUCCESS;
@@ -75,7 +75,7 @@ int output_file(int fd, struct dbheader_t *dbhdr, struct employee_t *employees) 
 	
 	struct dbheader_t temp_header = *dbhdr;
 	temp_header.magic = htonl(temp_header.magic);
-	temp_header.filesize = htonl(sizeof(struct dbheader_t) + (sizeof(struct employee_t) * realcount));
+	temp_header.filesize = htonl(temp_header.filesize);
 	temp_header.count = htons(temp_header.count);
 	temp_header.version = htons(temp_header.version);
 
