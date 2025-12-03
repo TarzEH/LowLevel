@@ -10,11 +10,11 @@
 
 
 int create_db_file(char *filename) {
-
+	return open(filename, O_RDWR | O_CREAT | O_TRUNC, 0644);
 }
 
 int open_db_file(char *filename) {
-
+	return open(filename, O_RDWR);
 }
 
 
