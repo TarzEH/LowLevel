@@ -16,7 +16,7 @@ int create_db_header(struct dbheader_t **headerOut) {
 	header->magic = HEADER_MAGIC;
 	header->version = 1;
 	header->count = 0;
-	header->filesize = sizeof(struct dbheader_t) + (sizeof(struct employee_t) * 0);
+	header->filesize = sizeof(struct dbheader_t);
 	
 	*headerOut = header;
 	return STATUS_SUCCESS;
@@ -52,7 +52,8 @@ int read_employees(int fd, struct dbheader_t *dbhdr, struct employee_t **employe
 }
 
 int output_file(int fd, struct dbheader_t *dbhdr, struct employee_t *employees) {
-	struct stat st;
+	dbhdr->filesize = sizeof(struct dbheader_t) + (sizeof(struct employee_t) * dbhdr->count);
+	
 	struct dbheader_t header = *dbhdr;
 	header.magic = htonl(header.magic);
 	header.version = htons(header.version);
@@ -62,8 +63,11 @@ int output_file(int fd, struct dbheader_t *dbhdr, struct employee_t *employees) 
 	lseek(fd, 0, SEEK_SET);
 	write(fd, &header, sizeof(struct dbheader_t));
 	
-	fstat(fd, &st);
-	dbhdr->filesize = st.st_size;
+	int i;
+	for (i = 0; i < dbhdr->count; i++) {
+		write(fd, &employees[i], sizeof(struct employee_t));
+	}
+	
 	return STATUS_SUCCESS;
 }
 
