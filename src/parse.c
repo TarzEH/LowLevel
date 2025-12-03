@@ -68,13 +68,14 @@ int output_file(int fd, struct dbheader_t *dbhdr, struct employee_t *employees) 
 		return STATUS_ERROR;
 	}
 	
-	dbhdr->magic = htonl(dbhdr->magic);
-	dbhdr->filesize = htonl(dbhdr->filesize);
-	dbhdr->count = htons(dbhdr->count);
-	dbhdr->version = htons(dbhdr->version);
+	struct dbheader_t temp_header = *dbhdr;
+	temp_header.magic = htonl(temp_header.magic);
+	temp_header.filesize = htonl(temp_header.filesize);
+	temp_header.count = htons(temp_header.count);
+	temp_header.version = htons(temp_header.version);
 	
 	lseek(fd, 0, SEEK_SET);
-	if (write(fd, dbhdr, sizeof(struct dbheader_t)) != sizeof(struct dbheader_t)) {
+	if (write(fd, &temp_header, sizeof(struct dbheader_t)) != sizeof(struct dbheader_t)) {
 		return STATUS_ERROR;
 	}
 	
