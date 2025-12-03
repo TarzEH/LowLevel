@@ -11,63 +11,88 @@
 
 int create_db_header(struct dbheader_t **headerOut) {
 	struct dbheader_t *header = calloc(1, sizeof(struct dbheader_t));
-	if (!header) return STATUS_ERROR;
-	
-	header->magic = HEADER_MAGIC;
+	if (header == NULL) {
+		return STATUS_ERROR;
+	}
+
 	header->version = 1;
 	header->count = 0;
+	header->magic = HEADER_MAGIC;
 	header->filesize = sizeof(struct dbheader_t);
-	
+
 	*headerOut = header;
 	return STATUS_SUCCESS;
 }
 
 int validate_db_header(int fd, struct dbheader_t **headerOut) {
-	*headerOut = NULL;
-	
+	if (fd < 0) {
+		return STATUS_ERROR;
+	}
+
 	struct dbheader_t *header = calloc(1, sizeof(struct dbheader_t));
-	if (!header) return STATUS_ERROR;
-	
+	if (header == NULL) {
+		return STATUS_ERROR;
+	}
+
 	if (read(fd, header, sizeof(struct dbheader_t)) != sizeof(struct dbheader_t)) {
 		free(header);
 		return STATUS_ERROR;
 	}
-	
-	header->magic = ntohl(header->magic);
+
 	header->version = ntohs(header->version);
 	header->count = ntohs(header->count);
+	header->magic = ntohl(header->magic);
 	header->filesize = ntohl(header->filesize);
-	
-	if (header->magic != HEADER_MAGIC || header->version != 1) {
+
+	if (header->magic != HEADER_MAGIC) {
 		free(header);
 		return STATUS_ERROR;
 	}
-	
+
+	if (header->version != 1) {
+		free(header);
+		return STATUS_ERROR;
+	}
+
+	struct stat dbstat = {0};
+	fstat(fd, &dbstat);
+	if (header->filesize != dbstat.st_size) {
+		free(header);
+		return STATUS_ERROR;
+	}
+
 	*headerOut = header;
 	return STATUS_SUCCESS;
 }
 
-int read_employees(int fd, struct dbheader_t *dbhdr, struct employee_t **employeesOut) {
+int output_file(int fd, struct dbheader_t *dbhdr, struct employee_t *employees) {
+	if (fd < 0) {
+		return STATUS_ERROR;
+	}
+
+	int realcount = dbhdr->count;
+	dbhdr->filesize = sizeof(struct dbheader_t) + (sizeof(struct employee_t) * realcount);
+
+	struct dbheader_t temp_header = *dbhdr;
+	temp_header.magic = htonl(temp_header.magic);
+	temp_header.filesize = htonl(temp_header.filesize);
+	temp_header.count = htons(temp_header.count);
+	temp_header.version = htons(temp_header.version);
+
+	lseek(fd, 0, SEEK_SET);
+	write(fd, &temp_header, sizeof(struct dbheader_t));
+
+	int i = 0;
+	for (; i < realcount; i++) {
+		struct employee_t temp_emp = employees[i];
+		temp_emp.hours = htonl(temp_emp.hours);
+		write(fd, &temp_emp, sizeof(struct employee_t));
+	}
+
 	return STATUS_SUCCESS;
 }
 
-int output_file(int fd, struct dbheader_t *dbhdr, struct employee_t *employees) {
-	dbhdr->filesize = sizeof(struct dbheader_t) + (sizeof(struct employee_t) * dbhdr->count);
-	
-	struct dbheader_t header = *dbhdr;
-	header.magic = htonl(header.magic);
-	header.version = htons(header.version);
-	header.count = htons(header.count);
-	header.filesize = htonl(header.filesize);
-	
-	lseek(fd, 0, SEEK_SET);
-	write(fd, &header, sizeof(struct dbheader_t));
-	
-	int i;
-	for (i = 0; i < dbhdr->count; i++) {
-		write(fd, &employees[i], sizeof(struct employee_t));
-	}
-	
+int read_employees(int fd, struct dbheader_t *dbhdr, struct employee_t **employeesOut) {
 	return STATUS_SUCCESS;
 }
 
