@@ -54,12 +54,7 @@ int validate_db_header(int fd, struct dbheader_t **headerOut) {
 		return STATUS_ERROR;
 	}
 
-	struct stat dbstat = {0};
-	fstat(fd, &dbstat);
-	if (header->filesize != dbstat.st_size) {
-		free(header);
-		return STATUS_ERROR;
-	}
+
 
 	*headerOut = header;
 	return STATUS_SUCCESS;
