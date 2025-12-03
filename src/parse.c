@@ -71,7 +71,6 @@ int output_file(int fd, struct dbheader_t *dbhdr, struct employee_t *employees) 
 	}
 
 	int realcount = dbhdr->count;
-	dbhdr->filesize = sizeof(struct dbheader_t) + (sizeof(struct employee_t) * realcount);
 
 	struct dbheader_t temp_header = *dbhdr;
 	temp_header.magic = htonl(temp_header.magic);
