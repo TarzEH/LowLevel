@@ -26,6 +26,10 @@ int create_db_header(struct dbheader_t **headerOut) {
 }
 
 int validate_db_header(int fd, struct dbheader_t **headerOut) {
+	if (fd < 0) {
+		return STATUS_ERROR;
+	}
+	
 	struct dbheader_t *header = calloc(1, sizeof(struct dbheader_t));
 	if (header == NULL) {
 		return STATUS_ERROR;
@@ -46,6 +50,11 @@ int validate_db_header(int fd, struct dbheader_t **headerOut) {
 		return STATUS_ERROR;
 	}
 	
+	if (header->version != 1) {
+		free(header);
+		return STATUS_ERROR;
+	}
+	
 	*headerOut = header;
 	return STATUS_SUCCESS;
 }
@@ -55,13 +64,19 @@ int read_employees(int fd, struct dbheader_t *dbhdr, struct employee_t **employe
 }
 
 int output_file(int fd, struct dbheader_t *dbhdr, struct employee_t *employees) {
+	if (fd < 0) {
+		return STATUS_ERROR;
+	}
+	
 	dbhdr->magic = htonl(dbhdr->magic);
 	dbhdr->filesize = htonl(dbhdr->filesize);
 	dbhdr->count = htons(dbhdr->count);
 	dbhdr->version = htons(dbhdr->version);
 	
 	lseek(fd, 0, SEEK_SET);
-	write(fd, dbhdr, sizeof(struct dbheader_t));
+	if (write(fd, dbhdr, sizeof(struct dbheader_t)) != sizeof(struct dbheader_t)) {
+		return STATUS_ERROR;
+	}
 	
 	return STATUS_SUCCESS;
 }
