@@ -60,7 +60,6 @@ int output_file(int fd, struct dbheader_t *dbhdr, struct employee_t *employees) 
 	
 	lseek(fd, 0, SEEK_SET);
 	write(fd, &header, sizeof(struct dbheader_t));
-	ftruncate(fd, dbhdr->filesize);
 	return STATUS_SUCCESS;
 }
 
