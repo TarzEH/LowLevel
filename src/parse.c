@@ -59,7 +59,8 @@ int output_file(int fd, struct dbheader_t *dbhdr, struct employee_t *employees) 
 	header.filesize = htonl(header.filesize);
 	
 	lseek(fd, 0, SEEK_SET);
-	return (write(fd, &header, sizeof(struct dbheader_t)) == sizeof(struct dbheader_t)) ? STATUS_SUCCESS : STATUS_ERROR;
+	write(fd, &header, sizeof(struct dbheader_t));
+	return STATUS_SUCCESS;
 }
 
 void list_employees(struct dbheader_t *dbhdr, struct employee_t *employees) {
