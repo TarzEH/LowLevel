@@ -94,6 +94,34 @@ int read_employees(int fd, struct dbheader_t *dbhdr, struct employee_t **employe
 void list_employees(struct dbheader_t *dbhdr, struct employee_t *employees) {
 }
 
-int add_employee(struct dbheader_t *dbhdr, struct employee_t *employees, char *addstring) {
+int add_employee(struct dbheader_t *dbhdr, struct employee_t **employees, char *addstring) {
+	if (!dbhdr || !employees || !addstring) {
+		return STATUS_ERROR;
+	}
+
+	char *name = strtok(addstring, ",");
+	char *address = strtok(NULL, ",");
+	char *hours_str = strtok(NULL, ",");
+
+	if (!name || !address || !hours_str) {
+		return STATUS_ERROR;
+	}
+
+	unsigned int hours = atoi(hours_str);
+
+	*employees = realloc(*employees, (dbhdr->count + 1) * sizeof(struct employee_t));
+	if (!*employees) {
+		return STATUS_ERROR;
+	}
+
+	strncpy((*employees)[dbhdr->count].name, name, NAME_LEN - 1);
+	(*employees)[dbhdr->count].name[NAME_LEN - 1] = '\0';
+	strncpy((*employees)[dbhdr->count].address, address, ADDRESS_LEN - 1);
+	(*employees)[dbhdr->count].address[ADDRESS_LEN - 1] = '\0';
+	(*employees)[dbhdr->count].hours = hours;
+
+	dbhdr->count++;
+	dbhdr->filesize = sizeof(struct dbheader_t) + (sizeof(struct employee_t) * dbhdr->count);
+
 	return STATUS_SUCCESS;
 }
